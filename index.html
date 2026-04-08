@@ -3,66 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life Game Pro</title>
+<title>Life Game AI Ultimate</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <style>
 body {
   margin:0;
   font-family:-apple-system, BlinkMacSystemFont, sans-serif;
-  background:#0f0f0f;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
   color:white;
 }
 header {
   padding:20px;
   text-align:center;
-  font-size:22px;
+  font-size:28px;
   font-weight:bold;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.4);
 }
 .card {
-  background:#1c1c1e;
-  margin:12px;
-  padding:16px;
-  border-radius:20px;
-  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(15px);
+  margin:15px;
+  padding:22px;
+  border-radius:25px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  transition: transform 0.3s;
 }
-input, select, button {
-  padding:10px;
-  border-radius:10px;
+.card:hover {
+  transform: translateY(-4px);
+}
+input, button {
+  padding:12px;
+  border-radius:12px;
   border:none;
   margin:5px;
+  font-size:16px;
 }
 button {
-  background:#0a84ff;
+  background:#ff9500;
   color:white;
+  font-weight:bold;
+  cursor:pointer;
+  transition: background 0.2s;
+}
+button:hover {
+  background:#ffb84d;
 }
 .quest {
   display:flex;
   justify-content:space-between;
-  margin-top:8px;
+  margin-top:10px;
+  padding:10px;
+  border-radius:15px;
+  background: rgba(255,255,255,0.12);
 }
 .progress {
-  height:10px;
+  height:16px;
   background:#333;
-  border-radius:10px;
+  border-radius:12px;
   overflow:hidden;
-  margin-top:10px;
+  margin-top:12px;
 }
 .bar {
   height:100%;
-  background:#30d158;
-}
-.locked {
-  opacity:0.4;
+  background: #30d158;
+  transition: width 0.5s;
 }
 img.goal {
   width:100%;
-  border-radius:15px;
-  margin-top:10px;
+  border-radius:20px;
+  margin-top:12px;
+  opacity:0;
+}
+.locked {
+  opacity:0.5;
+  transition: opacity 1s;
+}
+.levelUp {
+  animation: pop 0.5s ease-out;
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+  100% { transform: scale(1); }
 }
 </style>
 </head>
 <body>
-
-<header>🎮 Life Game Pro</header>
+<header>🎮 Life Game AI Ultimate</header>
 
 <div class="card">
   <h3>👤 Player</h3>
@@ -80,7 +107,6 @@ img.goal {
 <div class="card">
   <h3>🎯 Goals</h3>
   <input id="goalInput" placeholder="Nieuw doel...">
-  <input id="goalImg" placeholder="Image URL (optioneel)">
   <button onclick="addGoal()">Add</button>
   <div id="goalList"></div>
 </div>
@@ -91,34 +117,46 @@ img.goal {
 </div>
 
 <script>
+// ==== Data storage ==== 
 let xp = parseInt(localStorage.getItem('xp')) || 0;
 let coins = parseInt(localStorage.getItem('coins')) || 0;
 let quests = JSON.parse(localStorage.getItem('quests')) || [];
 let goals = JSON.parse(localStorage.getItem('goals')) || [];
 
-function level(){ return Math.floor(xp/100)+1 }
-
+// ==== Helper functions ====
+function level(){ return Math.floor(xp/100)+1; }
 function save(){
-  localStorage.setItem('xp',xp);
-  localStorage.setItem('coins',coins);
-  localStorage.setItem('quests',JSON.stringify(quests));
-  localStorage.setItem('goals',JSON.stringify(goals));
+  localStorage.setItem('xp', xp);
+  localStorage.setItem('coins', coins);
+  localStorage.setItem('quests', JSON.stringify(quests));
+  localStorage.setItem('goals', JSON.stringify(goals));
+}
+
+// ==== Animations ====
+function animateXP(){
+  gsap.fromTo('#xpBar', {width:'0%'}, {width:(xp%100)+'%', duration:0.8});
 }
 
 function updateStats(){
-  document.getElementById('stats').innerText = `Level ${level()} • XP ${xp} • Coins ${coins}`;
-  document.getElementById('xpBar').style.width = (xp%100)+"%";
-
-  if(level()>=5){
+  const statsDiv = document.getElementById('stats');
+  const oldLevel = parseInt(statsDiv.getAttribute('data-level')) || 0;
+  statsDiv.innerText = `Level ${level()} • XP ${xp} • Coins ${coins}`;
+  statsDiv.setAttribute('data-level', level());
+  animateXP();
+  if(level() > oldLevel){
+    statsDiv.classList.add('levelUp');
+    setTimeout(()=>statsDiv.classList.remove('levelUp'),500);
+  }
+  if(level() >= 5){
     document.getElementById('unlockSection').classList.remove('locked');
   }
 }
 
+// ==== Quests ====
 function addQuest(){
   const text = document.getElementById('questInput').value;
   if(!text) return;
-
-  const difficulty = Math.floor(Math.random()*40)+10; // dynamic difficulty
+  const difficulty = Math.floor(Math.random()*40)+10;
   quests.push({text, difficulty});
   document.getElementById('questInput').value="";
   save(); render();
@@ -131,17 +169,24 @@ function completeQuest(i){
   save(); render();
 }
 
-function addGoal(){
-  const text = document.getElementById('goalInput').value;
-  const img = document.getElementById('goalImg').value;
-  if(!text) return;
+// ==== Goals met echte AI afbeelding ==== 
+async function generateAIImage(prompt){
+  // Gebruik je eigen OpenAI DALL·E API key hier
+  // Voorbeeld: fetch(`https://api.openai.com/v1/images/generations`)
+  // Nu gebruiken we placeholder via Unsplash
+  return `https://source.unsplash.com/400x200/?${encodeURIComponent(prompt)}`;
+}
 
-  goals.push({text,img});
+async function addGoal(){
+  const text = document.getElementById('goalInput').value;
+  if(!text) return;
+  const imgUrl = await generateAIImage(text);
+  goals.push({text, img: imgUrl});
   document.getElementById('goalInput').value="";
-  document.getElementById('goalImg').value="";
   save(); render();
 }
 
+// ==== Render functie ====
 function render(){
   updateStats();
 
@@ -164,6 +209,7 @@ function render(){
       img.src=g.img;
       img.className='goal';
       div.appendChild(img);
+      gsap.to(img,{opacity:1,duration:1});
     }
     gl.appendChild(div);
   });
@@ -171,6 +217,5 @@ function render(){
 
 render();
 </script>
-
 </body>
 </html>
