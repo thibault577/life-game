@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Game</title>
+  <style>
+    body { font-family: Arial; background:#111; color:#fff; text-align:center; }
+    h1 { margin-top:20px; }
+    .card { background:#1e1e1e; padding:15px; margin:15px; border-radius:10px; }
+    input, button { padding:10px; margin:5px; border-radius:5px; border:none; }
+    button { background:#4caf50; color:white; }
+    .quest { display:flex; justify-content:space-between; margin:5px 0; }
+  </style>
+</head>
+<body>
+
+<h1>🎮 Life Game</h1>
+
+<div class="card">
+  <h2>👤 Player</h2>
+  <p id="stats"></p>
+</div>
+
+<div class="card">
+  <h2>📜 Quests</h2>
+  <input id="questInput" placeholder="Nieuwe taak...">
+  <select id="difficulty">
+    <option value="10">Easy</option>
+    <option value="25">Medium</option>
+    <option value="50">Hard</option>
+  </select>
+  <button onclick="addQuest()">Add</button>
+  <div id="questList"></div>
+</div>
+
+<script>
+let xp = localStorage.getItem('xp') ? parseInt(localStorage.getItem('xp')) : 0;
+let coins = localStorage.getItem('coins') ? parseInt(localStorage.getItem('coins')) : 0;
+let quests = localStorage.getItem('quests') ? JSON.parse(localStorage.getItem('quests')) : [];
+
+function level() {
+  return Math.floor(xp / 100) + 1;
+}
+
+function updateStats() {
+  document.getElementById('stats').innerText = `Level ${level()} - XP: ${xp} - Coins: ${coins}`;
+}
+
+function save() {
+  localStorage.setItem('xp', xp);
+  localStorage.setItem('coins', coins);
+  localStorage.setItem('quests', JSON.stringify(quests));
+}
+
+function addQuest() {
+  const text = document.getElementById('questInput').value;
+  const value = parseInt(document.getElementById('difficulty').value);
+  if (!text) return;
+
+  quests.push({ text, value });
+  document.getElementById('questInput').value = '';
+  save();
+  render();
+}
+
+function completeQuest(index) {
+  xp += quests[index].value;
+  coins += Math.floor(quests[index].value / 2);
+  quests.splice(index, 1);
+  save();
+  render();
+}
+
+function render() {
+  updateStats();
+  const list = document.getElementById('questList');
+  list.innerHTML = '';
+
+  quests.forEach((q, i) => {
+    const div = document.createElement('div');
+    div.className = 'quest';
+    div.innerHTML = `${q.text} (+${q.value} XP) <button onclick="completeQuest(${i})">✔</button>`;
+    list.appendChild(div);
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
